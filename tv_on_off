@@ -21,8 +21,10 @@ BUTTON="0004 00010081"
 INPUT=/dev/input/event4
 
 # A value of CEC_RX_CNT parameter in /sys/class/cec/dump_reg file when a TV is in standby mode
-IS_OFF1="0x09"
-IS_OFF2="0x02"
+# Sony Samsung
+IS_OFF="0x09 0x02"
+# Codes in mode on
+IS_ON="0x05 0x04"
 
 # Wait until boot is complete
 while [ ""`getprop dev.bootcomplete` != "1" ] ; do sleep 1; done
@@ -46,14 +48,43 @@ function turnOn() {
 	# Samsung/Sony
 	echo 0xF0 0x04 > /sys/class/cec/cmd
 }
+function tryOnOff() {
+
+	echo "Try to turn off" >> $LOG
+	turnOff
+	sleep 1
+
+	isOn
+	local res=$?
+
+	if [ "$res" = "2" ]; then
+		echo "Try to turn on" >> $LOG
+		turnOn
+	fi
+}
 
 function isOn() {
 	line=`cat /sys/class/cec/dump_reg|grep CEC_RX_CNT | sed -n "s/^.*=.*\(0x[0-9]\{2\}\)\s*$/\1/p"`
-	if [ "$line" = "$IS_OFF1" ] || [ "$line" = "$IS_OFF2" ]; then
-		return 0
-	else
-		return 1
+
+	if [ "$line" = "0x00" ]; then
+		return 2
 	fi
+
+	for code in $IS_ON
+	do
+		if [ "$line" = "$code" ]; then
+			return 1
+		fi
+	done
+
+	for code in $IS_OFF
+	do
+		if [ "$line" = "$code" ]; then
+			return 0
+		fi
+	done
+
+	return 1
 }
 
 
@@ -70,10 +101,14 @@ while do
 
 		isOn
 		local res=$?
-		if [ "$res" = "1" ] ; then
-			turnOff
+		if [ "$res" = "2" ]; then
+			tryOnOff
 		else
-			turnOn
+			if [ "$res" = "1" ] ; then
+				turnOff
+			else
+				turnOn
+			fi
 		fi
 	else
 		echo $input >> $LOG
