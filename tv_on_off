@@ -33,18 +33,33 @@ while [ ""`getprop dev.bootcomplete` != "1" ] ; do sleep 1; done
 LOG=/sdcard/tv_onoff.log
 
 
+function initState() {
+	echo "Init state of TV" > $LOG
 
+	return
+
+	echo 0xF0 0x8F > /sys/class/cec/cmd
+	sleep 2
+	isOn
+	local res=$?
+
+	if [ "$res" = "2" ]; then
+		echo "Cannot detect a tv state" >> $LOG
+	fi
+	if [ "$res" = "1" ]; then
+		echo "TV is on" >> $LOG
+	fi
+	if [ "$res" = "0" ]; then
+		echo "TV is off" >> $LOG
+	fi
+}
 function turnOff() {
 	echo "Turning off" >> $LOG
-	# Sony
-	# echo 0x40 0x36 > /sys/class/cec/cmd
 	# Samsung/Sony
 	echo 0xF0 0x36 > /sys/class/cec/cmd
 }
 function turnOn() {
 	echo "Waking up" >> $LOG
-	# Sony
-	# echo 0x40 0x04 > /sys/class/cec/cmd
 	# Samsung/Sony
 	echo 0xF0 0x04 > /sys/class/cec/cmd
 }
@@ -52,7 +67,7 @@ function tryOnOff() {
 
 	echo "Try to turn off" >> $LOG
 	turnOff
-	sleep 1
+	sleep 0.6
 
 	isOn
 	local res=$?
@@ -91,7 +106,8 @@ function isOn() {
 ###
 ### A main code
 ###
-echo tv_on_off init done > $LOG
+
+initState
 
 while do
 	input=`getevent -c 6 -n $INPUT`
