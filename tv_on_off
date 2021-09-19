@@ -102,6 +102,24 @@ function isOn() {
 	return 1
 }
 
+function isOn2() {
+  # Query power status
+  echo 0xF0 0x8F > /sys/class/cec/cmd
+  sleep 0.5
+
+	code=`cat /sys/class/cec/dump_reg|grep "RX buffer:" | sed -n "s/^.*: 0f 90 \([0-9]\{2\}\) .*$/\1/p"`
+
+	if [ "$code" = "01" ]; then
+		return 0
+	fi
+
+  if [ "$code" = "00" ]; then
+    return 1
+  fi
+
+	return 2
+}
+
 
 ###
 ### A main code
@@ -110,12 +128,13 @@ function isOn() {
 initState
 
 while do
-	input=`getevent -c 6 -n $INPUT`
+#	input=`getevent -c 4 -n $INPUT`
+	input=`getevent -c 4 -n`
 	code=`echo $input | sed -n "s/^.*\($BUTTON\).*$/\1/p"`
 
 	if [ "$code" = "$BUTTON" ] ; then
 
-		isOn
+		isOn2
 		local res=$?
 		if [ "$res" = "2" ]; then
 			tryOnOff
