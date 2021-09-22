@@ -105,17 +105,24 @@ function isOn() {
 function isOn2() {
   # Query power status
   echo 0xF0 0x8F > /sys/class/cec/cmd
-  sleep 0.5
 
-	code=`cat /sys/class/cec/dump_reg|grep "RX buffer:" | sed -n "s/^.*: 0f 90 \([0-9]\{2\}\) .*$/\1/p"`
+  counter=1
+  while [ $counter -le 6 ]
+  do
+    sleep 0.15
 
-	if [ "$code" = "01" ]; then
-		return 0
-	fi
+    code=`cat /sys/class/cec/dump_reg|grep "RX buffer:" | sed -n "s/^.*: 0f 90 \([0-9]\{2\}\) .*$/\1/p"`
 
-  if [ "$code" = "00" ]; then
-    return 1
-  fi
+    if [ "$code" = "01" ]; then
+      return 0
+    fi
+
+    if [ "$code" = "00" ]; then
+      return 1
+    fi
+
+    ((counter++))
+  done
 
 	return 2
 }
