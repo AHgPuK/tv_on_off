@@ -2,7 +2,7 @@
 #
 # Script for TV power control from a box
 # Intercept "Power" button, detect a TV state and toggle it
-# Version 1.1
+# Version 2.0
 #
 
 # button code from getevent to watch
@@ -26,15 +26,19 @@ IS_OFF="0x09 0x02"
 # Codes in mode on
 IS_ON="0x05 0x04"
 
-# Wait until boot is complete
-while [ ""`getprop dev.bootcomplete` != "1" ] ; do sleep 1; done
-
 # Set log file for messaging
 LOG=/sdcard/tv_onoff.log
 
+sleep 5
+
+echo "Start TV on_off" > $LOG
+
+# Wait until boot is complete
+while [ ""`getprop dev.bootcomplete` != "1" ] ; do echo "Waitiing until boot is complete" >> $LOG; sleep 3; done
+
 
 function initState() {
-	echo "Init state of TV" > $LOG
+	echo "Init state of TV" >> $LOG
 
 	return
 
@@ -159,6 +163,7 @@ done
 
 ###
 ### Version History
+### 2.0 Read TV state
 ### 1.1 Add Samsung support
 ### 1.0 First draft. Only Sony support
 ###
